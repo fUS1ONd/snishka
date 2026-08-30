@@ -1,0 +1,32 @@
+{
+  "name": "snihunt",
+  "version": "0.1.0",
+  "description": "Find a whitelisted SNI on your own hosting so VLESS+Reality survives SNI-based volumetric throttling",
+  "bin": {
+    "snihunt-install": "bin/install.js"
+  },
+  "scripts": {
+    "postinstall": "node bin/install.js"
+  },
+  "keywords": [
+    "reality",
+    "xray",
+    "vless",
+    "sni",
+    "dpi",
+    "anti-censorship",
+    "claude-skill"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fUS1ONd/snihunt.git"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "files": [
+    "bin/",
+    "skill/"
+  ]
+}

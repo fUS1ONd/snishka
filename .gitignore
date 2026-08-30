@@ -1,0 +1,13 @@
+# рабочие данные конвейера
+*.jsonl
+*.log
+alive*.txt
+certs*.jsonl
+nets.txt
+domains*.txt
+found*.txt
+candidates.jsonl
+verdict*.jsonl
+__pycache__/
+*.pyc
+node_modules/
