@@ -2,15 +2,49 @@
 
 [English](README.en.md) | [Русский](README.md)
 
-A skill that automates the search for an SNI which passes through
-**volume-based filtering (the 16–20 KB cutoff)**.
-Useful for reviving Hetzner, OVH, DigitalOcean and other throttled machines you
-still have ssh access to.
+> A skill that automates the search for an SNI which passes through **volume-based filtering (the 16–20 KB cutoff)**.
+Useful for reviving Hetzner, OVH, DigitalOcean and other throttled machines you still have ssh access to.
 
 Works both as a **Claude Code skill** and as a **standalone CLI**
 (`python3 snihunt.py …`) — Claude is not required.
 
 ---
+
+## Install
+
+Via `skills` — installs the skill to **any agent** (Claude Code, Cursor, Codex,
+Copilot, etc.), autodetecting which ones are present on the machine:
+
+```bash
+npx skills@latest add fUS1ONd/snishka
+```
+
+Or manually — the tool is self-contained, needs only Python 3 and `cryptography`:
+
+```bash
+git clone https://github.com/fUS1ONd/snishka
+python3 snishka/skills/snishka/scripts/snihunt.py --help
+```
+
+## ⚠️ On abuse and legality
+
+The discovery stage can actively scan port 443 across the hoster's subnets. **This
+is scanning networks you don't own:**
+
+- it violates the ToS of most hosting providers;
+- it triggers abuse reports. Large hosters (Hetzner, OVH, etc.) detect netscans to
+  their ranges and may **lock your server**;
+- **it is especially dangerous to run the scan on a VPS of the same hoster whose
+  network you're scanning** — the shortest path to an abuse report and a lock.
+
+Therefore the `scan` command requires an explicit acknowledgment of the risk
+(interactively or via `--accept-abuse-risk`). A lower-risk alternative for
+discovery is to take domains from **Certificate Transparency** (crt.sh) without
+sending a single packet into someone else's network.
+
+Responsibility for the legality and consequences of use rests with the user. Run
+active probes only against **your own** infrastructure or where you have the
+owner's explicit permission.
 
 ## The problem
 
@@ -44,21 +78,6 @@ Hence the pipeline:
    (allowlisted) vs. get strangled at ~16 KB;
 4. **qualify** — keep the ones that pass and are also usable as a Reality `dest`
    (TLS 1.3 + X25519 + h2, returning `200` without redirect).
-
-## Install
-
-As a Claude Code skill (copies into `~/.claude/skills/snishka`):
-
-```bash
-npx github:fUS1ONd/snishka
-```
-
-Or manually — the tool is self-contained, needs only Python 3 and `cryptography`:
-
-```bash
-git clone https://github.com/fUS1ONd/snishka
-python3 snishka/skill/scripts/snihunt.py --help
-```
 
 ## Next
 

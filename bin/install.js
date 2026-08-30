@@ -8,7 +8,7 @@ const path = require('path');
 const os = require('os');
 
 const SKILL_NAME = 'snishka';
-const src = path.join(__dirname, '..', 'skill');
+const src = path.join(__dirname, '..', 'skills', 'snishka');
 const dest = path.join(os.homedir(), '.claude', 'skills', SKILL_NAME);
 
 function copyDir(from, to) {

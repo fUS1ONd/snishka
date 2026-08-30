@@ -5,9 +5,9 @@
 ## Quick start
 
 ```bash
-S=skill/scripts/snihunt.py
+S=skills/snishka/scripts/snihunt.py
 
-# 1. candidate domains from the hoster's subnets (see the abuse disclaimer below!)
+# 1. candidate domains from the hoster's subnets (see the abuse disclaimer in the [README](README.en.md))
 python3 $S prefixes --asn <hoster-ASN> --near <your-subnet/24> --limit 24 > nets.txt
 python3 $S scan --cidr-file nets.txt --conc 150 --bind <uplink-IP> --out alive.txt
 python3 $S certs --in alive.txt --conc 60 --out certs.jsonl
@@ -50,26 +50,6 @@ An SNI that passes the filter must still work as a masking host: TLS 1.3, X25519
 key exchange, ALPN `h2`, returns `200` without redirecting to a foreign domain, a
 large and stable site, ideally the same country/hoster as your server. The
 `qualify` subcommand checks this.
-
-## ⚠️ On abuse and legality
-
-The discovery stage can actively scan port 443 across the hoster's subnets. **This
-is scanning networks you don't own:**
-
-- it violates the ToS of most hosting providers;
-- it triggers abuse reports. Large hosters (Hetzner, OVH, etc.) detect netscans to
-  their ranges and may **lock your server**;
-- **it is especially dangerous to run the scan on a VPS of the same hoster whose
-  network you're scanning** — the shortest path to an abuse report and a lock.
-
-Therefore the `scan` command requires an explicit acknowledgment of the risk
-(interactively or via `--accept-abuse-risk`). A lower-risk alternative for
-discovery is to take domains from **Certificate Transparency** (crt.sh) without
-sending a single packet into someone else's network.
-
-Responsibility for the legality and consequences of use rests with the user. Run
-active probes only against **your own** infrastructure or where you have the
-owner's explicit permission.
 
 ## Caveats
 
