@@ -7,7 +7,7 @@ const fs = require('fs');
 const path = require('path');
 const os = require('os');
 
-const SKILL_NAME = 'sni-whitelist-hunt';
+const SKILL_NAME = 'snishka';
 const src = path.join(__dirname, '..', 'skill');
 const dest = path.join(os.homedir(), '.claude', 'skills', SKILL_NAME);
 

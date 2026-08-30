@@ -1,5 +1,5 @@
 ---
-name: sni-whitelist-hunt
+name: snishka
 description: >-
   Поиск рабочего SNI (Reality dest / serverNames) в условиях, когда РФ-DPI
   фильтрует не по IP, а по объёму трафика к SNI — пропускает whitelisted-имена
