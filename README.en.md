@@ -1,6 +1,6 @@
 # snishka
 
-**Read in another language:** [Русский](README.md)
+[English](README.en.md) | [Русский](README.md)
 
 Find an SNI that survives **SNI-based volumetric throttling** — on your own
 hosting, so that VLESS + Reality (Xray) works again where the network chokes
