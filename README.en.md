@@ -7,8 +7,8 @@
 > A skill that automates the search for an SNI which passes through **volume-based filtering (the 16–20 KB cutoff)**.
 Useful for reviving Hetzner, OVH, DigitalOcean and other throttled machines you still have ssh access to.
 
-Works both as a **Claude Code skill** and as a **standalone CLI**
-(`python3 snihunt.py …`) — Claude is not required.
+Works both as an **agent skill** and as a **standalone CLI**
+(`python3 snihunt.py …`).
 
 ---
 
