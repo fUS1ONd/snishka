@@ -378,6 +378,58 @@ def _http_probe(domain, ip, port, timeout):
     }
 
 
+# Близость домена к хосту, откуда взят сертификат. Хороший Reality dest — это
+# домен, чей реальный TLS живёт на том же IP (или хотя бы в той же сети хостера),
+# а не «уведённое» имя, резолвящееся в чужой CDN/зеркало.
+PROX_SAME_IP = "same-ip"      # домен резолвится ровно в IP этого хоста
+PROX_SAME_24 = "same-24"      # в тот же /24
+PROX_SAME_ASN = "same-asn"    # в один из префиксов хостера
+PROX_OFFNET = "offnet"        # в чужой IP — вероятно CDN/зеркало/прокси
+PROX_NODNS = "no-dns"         # не резолвится
+
+# ранжирование близости: чем меньше индекс, тем лучше кандидат
+PROX_RANK = {
+    PROX_SAME_IP: 0, PROX_SAME_24: 1, PROX_SAME_ASN: 2,
+    PROX_OFFNET: 3, PROX_NODNS: 4,
+}
+
+
+def _resolve_ips(domain, timeout):
+    """A-записи домена. Пустой список, если не резолвится."""
+    old = socket.getdefaulttimeout()
+    socket.setdefaulttimeout(timeout)
+    try:
+        infos = socket.getaddrinfo(domain, 443, socket.AF_INET, socket.SOCK_STREAM)
+        return sorted({i[4][0] for i in infos})
+    except (socket.gaierror, socket.timeout, OSError):
+        return []
+    finally:
+        socket.setdefaulttimeout(old)
+
+
+def _classify_proximity(domain, host_ip, prefixes, timeout):
+    """Сравнить, во что резолвится домен, с IP хоста и сетью хостера.
+
+    prefixes — список ipaddress-сетей хостера (из команды prefixes), может быть
+    пустым: тогда классификация ограничивается same-ip / same-24 / offnet.
+    """
+    resolved = _resolve_ips(domain, timeout)
+    if not resolved:
+        return PROX_NODNS, []
+    ips = [ipaddress.ip_address(r) for r in resolved]
+    if host_ip in resolved:
+        return PROX_SAME_IP, resolved
+    try:
+        host_net = ipaddress.ip_network(host_ip + "/24", strict=False)
+        if any(a in host_net for a in ips):
+            return PROX_SAME_24, resolved
+    except ValueError:
+        pass
+    if prefixes and any(any(a in net for net in prefixes) for a in ips):
+        return PROX_SAME_ASN, resolved
+    return PROX_OFFNET, resolved
+
+
 def _qualify_one(rec, args):
     ip = rec["ip"]
     for domain in rec["names"][: args.names_per_host]:
@@ -394,6 +446,9 @@ def _qualify_one(rec, args):
         http = _http_probe(domain, ip, args.port, args.timeout)
         redirect = http.get("redirect") or ""
         redirects_away = bool(redirect) and domain not in redirect
+        proximity, resolved = _classify_proximity(
+            domain, ip, args.prefixes, args.timeout
+        )
         yield {
             "domain": domain,
             "ip": ip,
@@ -406,14 +461,40 @@ def _qualify_one(rec, args):
             "redirect": redirect,
             "redirects_away": redirects_away,
             "h2": http.get("http_version") == "2",
+            "proximity": proximity,
+            "resolved": resolved,
         }
+
+
+def _load_prefixes(path):
+    """CIDR-префиксы хостера из файла (вывод команды prefixes)."""
+    if not path:
+        return []
+    nets = []
+    with open(path) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            try:
+                nets.append(ipaddress.ip_network(line, strict=False))
+            except ValueError:
+                pass
+    return nets
 
 
 def cmd_qualify(args):
     recs = list(read_jsonl(args.inp))
-    log(f"[qualify] хостов на проверку: {len(recs)}")
+    args.prefixes = _load_prefixes(args.prefixes_file)
+    log(f"[qualify] хостов на проверку: {len(recs)}"
+        + (f", префиксов хостера: {len(args.prefixes)}" if args.prefixes else
+           " (без префиксов — same-asn не различается)"))
+    if args.max_proximity not in PROX_RANK:
+        args.max_proximity = PROX_OFFNET
     out = JsonlWriter(args.out)
     n = 0
+    from collections import Counter
+    prox_stats = Counter()
 
     def work(rec):
         # сбой на одном хосте не должен ронять весь прогон
@@ -430,12 +511,19 @@ def cmd_qualify(args):
                     continue
                 if args.no_redirect and c["redirects_away"]:
                     continue
+                # отсев по близости: offnet-домены (CDN/зеркала/чужой IP) —
+                # плохие dest, если пользователь не разрешил их явно
+                if PROX_RANK[c["proximity"]] > PROX_RANK[args.max_proximity]:
+                    continue
+                prox_stats[c["proximity"]] += 1
                 out.write(c)
                 n += 1
             if i % 100 == 0:
                 log(f"[qualify] {i}/{len(recs)}, кандидатов {n}")
     out.close()
-    log(f"[qualify] кандидатов: {n} -> {args.out}")
+    stats = ", ".join(f"{k}={v}" for k, v in sorted(
+        prox_stats.items(), key=lambda kv: PROX_RANK[kv[0]]))
+    log(f"[qualify] кандидатов: {n} -> {args.out}" + (f" ({stats})" if stats else ""))
 
 
 # --------------------------------------------------------------------------- rutest
@@ -743,6 +831,8 @@ def cmd_report(args):
                 "min_kib": (f"{r['min_bytes'] / 1024:.0f}"
                             if r.get("min_bytes") is not None else "-"),
                 "ip": q.get("ip", "-"),
+                "prox": q.get("proximity", "-"),
+                "_prox_rank": PROX_RANK.get(q.get("proximity"), 9),
                 "h2": "да" if q.get("h2") else "нет",
                 "group": q.get("group", "-"),
                 "code": q.get("http_code", "-"),
@@ -750,8 +840,10 @@ def cmd_report(args):
             }
         )
     good = {VERDICT_PASS, VERDICT_WHITE}
-    rows.sort(key=lambda x: (x["verdict"] not in good, -x["_passes"],
-                             x["h2"] != "да", x["domain"]))
+    # сортировка: сперва прошедшие DPI, затем самые близкие к хостеру
+    # (same-ip раньше same-asn), потом по стабильности и h2
+    rows.sort(key=lambda x: (x["verdict"] not in good, x["_prox_rank"],
+                             -x["_passes"], x["h2"] != "да", x["domain"]))
     if args.only_pass:
         rows = [r for r in rows if r["verdict"] in good]
 
@@ -760,6 +852,7 @@ def cmd_report(args):
         return
     for r in rows:
         r.pop("_passes", None)
+        r.pop("_prox_rank", None)
     keys = list(rows[0])
     w = [max(len(str(r[k])) for r in rows + [{k: k}]) for k in keys]
     print("  ".join(k.ljust(w[i]) for i, k in enumerate(keys)))
@@ -825,6 +918,14 @@ def main():
     sp.add_argument("--no-require-h2", dest="require_h2", action="store_false")
     sp.add_argument("--no-redirect", action="store_true", default=True)
     sp.add_argument("--allow-redirect", dest="no_redirect", action="store_false")
+    sp.add_argument("--prefixes-file",
+                    help="файл с CIDR хостера (вывод команды prefixes) — нужен, "
+                         "чтобы различать same-asn от offnet")
+    sp.add_argument("--max-proximity", default=PROX_SAME_ASN,
+                    choices=[PROX_SAME_IP, PROX_SAME_24, PROX_SAME_ASN, PROX_OFFNET],
+                    help="худшая допустимая близость домена к хосту: по умолчанию "
+                         "same-asn (домен должен резолвиться в сеть хостера); "
+                         "offnet — разрешить и чужие IP (CDN/зеркала)")
     sp.add_argument("--out", default="candidates.jsonl")
     sp.set_defaults(func=cmd_qualify)
 

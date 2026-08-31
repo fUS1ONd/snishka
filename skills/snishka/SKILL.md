@@ -111,7 +111,12 @@ python3 snihunt.py prefixes --asn <ASN-хостера> --near <своя-подс
 python3 snihunt.py scan --cidr-file nets.txt --conc 150 --bind <IP-аплинка> --out alive.txt
 #    Домены из сертификатов (дефолтный vhost, без SNI):
 python3 snihunt.py certs --in alive.txt --conc 60 --out certs.jsonl
-#    Уникальные домены, РФ-зоны первыми (белый список — это РФ-ресурсы):
+#    Пригодность под Reality + классификация близости домена к хостеру.
+#    --prefixes-file даёт различать «домен резолвится в сеть хостера» (same-asn)
+#    от «в чужой CDN/зеркало» (offnet):
+python3 snihunt.py qualify --in certs.jsonl --prefixes-file nets.txt \
+    --max-proximity same-asn --out candidates.jsonl
+#    Уникальные домены для перебора:
 python3 snihunt.py domains --in certs.jsonl > domains.txt
 
 # 3. ТЕСТОВЫЙ ЭНДПОИНТ на боевом сервере (отдаёт 2 МБ на любой SNI):
@@ -127,7 +132,8 @@ python3 snihunt.py rutest --domains-file domains.txt \
     --control-good 2ip.ru --control-bad nonexistent.invalid \
     --out verdict.jsonl
 
-# 5. ОТЧЁТ + отбор пригодных под Reality (см. ниже):
+# 5. ОТЧЁТ: прошедшие DPI, отсортированные по близости к хостеру (same-ip →
+#    same-asn → offnet) и стабильности:
 python3 snihunt.py report --in verdict.jsonl --qualified candidates.jsonl --only-pass
 ```
 
@@ -164,6 +170,38 @@ python3 snihunt.py report --in verdict.jsonl --qualified candidates.jsonl --only
 Подкоманда `qualify` проверяет это автоматически; финальный ручной прогон
 кандидата — `openssl s_client` + `curl --http2 --resolve` к самому домену
 (одиночные коннекты, не скан).
+
+### Классификация близости (proximity)
+
+`qualify` резолвит каждый домен и сравнивает, куда он ведёт, с IP хоста и с
+сетью хостера (`--prefixes-file`). Смысл: сертификат в подсети хостера ещё не
+значит, что домен там реально живёт — часто это «уведённое» имя, резолвящееся
+в чужой CDN или зеркало.
+
+| Близость | Домен резолвится… | Как dest |
+|---|---|---|
+| `same-ip` | ровно в IP этого хоста | идеал |
+| `same-24` | в тот же /24 | отлично |
+| `same-asn` | в любой префикс хостера | хорошо: та же сеть/страна/RTT |
+| `offnet` | в чужой IP (CDN/зеркало) | хуже: origin не у хостера |
+
+Зачем это важно: в **классической** схеме Reality (`dest` = внешний реальный
+сайт) Xray крадёт хендшейк, коннектясь к dest, поэтому далёкий origin даёт
+рассинхрон «коннект в одну страну, поведение сайта из другой». `same-asn` и
+ближе снимают это. В **selfsteal**-схеме (`dest` = свой локальный Caddy, имя
+только в `serverNames`) резолв домена не важен — там достаточно, чтобы SNI
+проходил DPI, и `offnet` тоже годится.
+
+Практическая тонкость: заезженные «популярные» SNI (`2ip.ru`, microsoft,
+cloudflare) блокируют по IP именно потому, что за ними прячется много VPN —
+цензор видит аномальный объём Reality-хендшейков на этот адрес. `same-asn`-домен
+из свежего скана, не на радаре, скрытнее, хотя мелкий сайт менее стабилен как
+dest. Автоматически «заезженность» не измерить — бери менее известные бренды
+руками. `2ip.ru`, кстати, честный `same-asn` (резолвится в свой Hetzner-IP) —
+его проблема не в близости, а именно в популярности.
+
+По умолчанию `qualify --max-proximity same-asn` отсекает `offnet`; ослабить —
+`--max-proximity offnet` (оставить всё, полезно для selfsteal).
 
 ## Оговорки
 
