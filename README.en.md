@@ -12,7 +12,7 @@ Works both as a **Claude Code skill** and as a **standalone CLI**
 
 ---
 
-## Install
+## 📦 Install
 
 Via `skills` — installs the skill to **any agent** (Claude Code, Cursor, Codex,
 Copilot, etc.), autodetecting which ones are present on the machine:
@@ -48,7 +48,7 @@ Responsibility for the legality and consequences of use rests with the user. Run
 active probes only against **your own** infrastructure or where you have the
 owner's explicit permission.
 
-## The problem
+## 🩻 The problem
 
 Sometimes the server is alive — ssh, ping and the TLS handshake all reach it, the
 IP is **not banned** — yet the VPN won't come up. A common cause: the DPI filters
@@ -62,7 +62,7 @@ the allowlist, the VPN dies exactly at the volume limit.
 The key fact: **allowlisted hosts live in those same subnets** — large resources
 whose names the network lets through.
 
-## How it works
+## ⚙️ How it works
 
 The core principle: measure **not "does the SNI owner's website load"**, but how
 much data you can pull **to your own server's production IP** using that SNI. The
@@ -81,7 +81,7 @@ Hence the pipeline:
 4. **qualify** — keep the ones that pass and are also usable as a Reality `dest`
    (TLS 1.3 + X25519 + h2, returning `200` without redirect).
 
-## Next
+## 📖 Next
 
 The full guide — quick start, reading the verdict, selecting an SNI for Reality,
 the abuse disclaimer and caveats — is in **[USAGE.en.md](USAGE.en.md)**.

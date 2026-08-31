@@ -2,7 +2,7 @@
 
 [English](USAGE.en.md) | [Русский](USAGE.md) · [← README](README.en.md)
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 S=skills/snishka/scripts/snihunt.py
@@ -28,7 +28,7 @@ python3 $S rutest --domains-file domains.txt \
 python3 $S report --in verdict.jsonl --only-pass
 ```
 
-## Reading the verdict
+## 📊 Reading the verdict
 
 We pull `need-bytes` of data from the production IP using the SNI under test:
 
@@ -44,14 +44,14 @@ run. If a known-allowlisted control fails on its own, the measurement is invalid
 (wrong channel/phase), not "the SNI is bad". Trust only results stable across all
 rounds.
 
-## Selecting a Reality `dest`
+## 🎯 Selecting a Reality `dest`
 
 An SNI that passes the filter must still work as a masking host: TLS 1.3, X25519
 key exchange, ALPN `h2`, returns `200` without redirecting to a foreign domain, a
 large and stable site, ideally the same country/hoster as your server. The
 `qualify` subcommand checks this.
 
-## Caveats
+## ⚠️ Caveats
 
 - The probes' TLS fingerprint is Python's, not a browser's. A DPI that inspects
   the fingerprint (not just SNI/volume) is not reproduced by this method.
