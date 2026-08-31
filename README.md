@@ -2,6 +2,8 @@
 
 [English](README.en.md) | [Русский](README.md)
 
+[![GitHub stars](https://img.shields.io/github/stars/fUS1ONd/snishka?style=flat)](https://github.com/fUS1ONd/snishka/stargazers) [![License: MIT](https://img.shields.io/github/license/fUS1ONd/snishka)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/fUS1ONd/snishka)](https://github.com/fUS1ONd/snishka/commits)
+
 > Скилл автоматизирующий поиск SNI, который проходит сквозь **фильтрацию по объёму трафика (16-20Кб блок)**.
 Может быть использован для реанимирования Hetzner, OVH, DigitalOcean и других зарыбленных машин, к которым есть доступ по ssh
 

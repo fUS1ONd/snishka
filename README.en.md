@@ -2,6 +2,8 @@
 
 [English](README.en.md) | [Русский](README.md)
 
+[![GitHub stars](https://img.shields.io/github/stars/fUS1ONd/snishka?style=flat)](https://github.com/fUS1ONd/snishka/stargazers) [![License: MIT](https://img.shields.io/github/license/fUS1ONd/snishka)](LICENSE) [![Last commit](https://img.shields.io/github/last-commit/fUS1ONd/snishka)](https://github.com/fUS1ONd/snishka/commits)
+
 > A skill that automates the search for an SNI which passes through **volume-based filtering (the 16–20 KB cutoff)**.
 Useful for reviving Hetzner, OVH, DigitalOcean and other throttled machines you still have ssh access to.
 

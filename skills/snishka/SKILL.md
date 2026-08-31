@@ -12,6 +12,7 @@ description: >-
   Reality» под мобильную/домашнюю блокировку РФ; когда обычная проверка
   «открывается ли сайт» врёт, а нужен замер именно до своего сервера. Инструмент —
   scripts/snihunt.py.
+disable-model-invocation: true
 ---
 
 # Поиск whitelisted-SNI под РФ-DPI (throttling по объёму)
