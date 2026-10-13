@@ -51,6 +51,13 @@ key exchange, ALPN `h2`, returns `200` without redirecting to a foreign domain, 
 large and stable site, ideally the same country/hoster as your server. The
 `qualify` subcommand checks this.
 
+## 🔌 The port matters
+
+The skill finds an SNI, not a port: probes go to `--bulk-port`, not to the node's
+production port. If a node with the found SNI won't come up on 443, the port may
+be the cause: in one observed case (Hetzner, Reality+Vision+TCP) the same SNI
+failed on 443 but worked on 8443. Try changing only the port.
+
 ## ⚠️ Caveats
 
 - The probes' TLS fingerprint is Python's, not a browser's. A DPI that inspects
